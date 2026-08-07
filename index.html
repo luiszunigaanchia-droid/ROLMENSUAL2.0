@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="es-CR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Gestión local, offline y auditable de roles mensuales del Laboratorio Clínico HSJD.">
+  <meta name="theme-color" content="#075985">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <title>Roles HSJD</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icons/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">RH</div>
+      <div>
+        <p class="eyebrow">Laboratorio Clínico HSJD</p>
+        <h1>Gestión de roles</h1>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button id="installBtn" class="btn ghost hidden" type="button">Instalar</button>
+      <span id="networkStatus" class="status" role="status" aria-live="polite">Iniciando…</span>
+    </div>
+  </header>
+
+  <div id="updateBanner" class="update-banner hidden" role="status">
+    <span>Hay una versión nueva disponible.</span>
+    <button id="updateBtn" class="btn primary" type="button">Actualizar</button>
+  </div>
+
+  <main class="page-shell">
+    <section class="toolbar card" aria-label="Periodo y acciones">
+      <div class="period-controls">
+        <label>Año<select id="yearSelect"></select></label>
+        <label>Mes<select id="monthSelect"></select></label>
+      </div>
+      <div class="toolbar-actions">
+        <button id="autoGenerateBtn" class="btn success" type="button">Auto-generar</button>
+        <button id="undoGenerateBtn" class="btn secondary hidden" type="button">Deshacer generación</button>
+        <button id="printBtn" class="btn secondary" type="button">Imprimir / PDF</button>
+        <button id="manageEmployeesBtn" class="btn secondary" type="button">Administrar personal</button>
+        <button id="backupBtn" class="btn secondary" type="button">Exportar respaldo</button>
+        <button id="importBtn" class="btn secondary" type="button">Importar respaldo</button>
+        <input id="importFile" type="file" accept="application/json,.json" hidden>
+        <button id="persistBtn" class="btn secondary" type="button">Proteger almacenamiento</button>
+        <button id="reloadCatalogBtn" class="btn secondary" type="button">Recargar catálogo</button>
+        <button id="clearMonthBtn" class="btn danger" type="button">Limpiar mes</button>
+      </div>
+    </section>
+
+    <p id="storageNotice" class="notice">Los datos se almacenan localmente en este navegador. Exporte respaldos JSON con regularidad.</p>
+
+    <section class="metrics" aria-label="Indicadores del rol">
+      <article class="metric card"><span>Personal activo</span><strong id="metricEmployees">0</strong></article>
+      <article class="metric card"><span>Asignados</span><strong id="metricAssigned">0</strong></article>
+      <article class="metric card"><span>Disponibles</span><strong id="metricAvailable">0</strong></article>
+      <article class="metric card"><span>Cobertura de cupos</span><strong id="metricCoverage">0%</strong><div class="progress"><span id="coverageFill"></span></div></article>
+      <article class="metric card"><span>Cupos excedidos</span><strong id="metricOverfill">0</strong></article>
+    </section>
+
+    <div class="workspace">
+      <aside class="sidebar card">
+        <div class="panel-heading">
+          <div>
+            <h2>Personal disponible</h2>
+            <p>Seleccione o arrastre para asignar.</p>
+          </div>
+          <span id="availableCount" class="counter">0</span>
+        </div>
+        <label class="search-label" for="employeeSearch">Buscar personal</label>
+        <input id="employeeSearch" class="search-input" type="search" placeholder="Nombre o sección base" autocomplete="off">
+        <div id="availableEmployees" class="people-list"></div>
+      </aside>
+
+      <section class="board-panel">
+        <div class="board-heading">
+          <div>
+            <h2 id="periodTitle">Rol mensual</h2>
+            <p id="periodSubtitle">Asignaciones por sección y turno</p>
+          </div>
+          <button id="auditBtn" class="btn secondary" type="button">Auditoría</button>
+        </div>
+        <div id="board" class="board"></div>
+      </section>
+    </div>
+  </main>
+
+  <dialog id="employeeDialog" class="dialog large-dialog">
+    <form method="dialog" class="dialog-frame" id="employeeDialogForm">
+      <header class="dialog-header">
+        <div><p class="eyebrow dark">Catálogo local</p><h2>Administrar personal</h2></div>
+        <button class="icon-button" data-close-dialog aria-label="Cerrar" type="button">×</button>
+      </header>
+      <div class="dialog-body split-dialog">
+        <section class="form-panel">
+          <h3 id="employeeFormTitle">Nuevo colaborador</h3>
+          <input id="employeeId" type="hidden">
+          <label>Nombre completo<input id="employeeName" maxlength="140" required></label>
+          <label>Sección base<select id="employeeBaseSection" required></select></label>
+          <label>Turno base<select id="employeeBaseShift" required></select></label>
+          <label class="checkbox-row"><input id="employeeActive" type="checkbox" checked> Colaborador activo</label>
+          <div class="dialog-actions start">
+            <button id="saveEmployeeBtn" class="btn primary" type="button">Guardar</button>
+            <button id="resetEmployeeBtn" class="btn secondary" type="button">Limpiar formulario</button>
+          </div>
+          <p class="form-help">Archivar conserva todos los roles históricos. Cambiar el nombre no reescribe meses anteriores.</p>
+        </section>
+        <section class="list-panel">
+          <label class="search-label" for="manageSearch">Buscar en el catálogo</label>
+          <input id="manageSearch" class="search-input" type="search" placeholder="Nombre, sección o turno">
+          <div id="employeeCatalog" class="catalog-list"></div>
+        </section>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="assignmentDialog" class="dialog">
+    <form method="dialog" class="dialog-frame" id="assignmentForm">
+      <header class="dialog-header">
+        <div><p class="eyebrow dark">Asignación mensual</p><h2 id="assignmentTitle">Asignar colaborador</h2></div>
+        <button class="icon-button" data-close-dialog aria-label="Cerrar" type="button">×</button>
+      </header>
+      <div class="dialog-body">
+        <input id="assignmentId" type="hidden">
+        <input id="assignmentEmployeeId" type="hidden">
+        <p id="assignmentEmployeeName" class="selected-person"></p>
+        <label>Sección<select id="assignmentSection" required></select></label>
+        <label>Turno<select id="assignmentShift" required></select></label>
+        <label>Nota<textarea id="assignmentNote" rows="3" maxlength="300" placeholder="Vacaciones, cubre otra área, observación administrativa…"></textarea></label>
+        <div class="dialog-actions">
+          <button id="saveAssignmentBtn" class="btn primary" type="button">Guardar asignación</button>
+        </div>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="auditDialog" class="dialog large-dialog">
+    <form method="dialog" class="dialog-frame">
+      <header class="dialog-header">
+        <div><p class="eyebrow dark">Trazabilidad local</p><h2>Auditoría</h2></div>
+        <button class="icon-button" data-close-dialog aria-label="Cerrar" type="button">×</button>
+      </header>
+      <div class="dialog-body">
+        <div id="auditList" class="audit-list"></div>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+  <section id="printArea" class="print-area" aria-hidden="true">
+    <header><h1>Asignación de roles</h1><p id="printPeriod"></p></header>
+    <div id="printContent"></div>
+  </section>
+
+  <script src="./js/config.js"></script>
+  <script src="./js/db.js"></script>
+  <script src="./js/app.js"></script>
+</body>
+</html>
