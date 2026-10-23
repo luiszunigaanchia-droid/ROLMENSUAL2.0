@@ -680,7 +680,8 @@ const RolDB = (() => {
     importBackup,
     uid,
     cleanText,
-    normalizeText
+    normalizeText,
+    parseJSONStorage
   });
 })();
 

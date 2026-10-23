@@ -10,7 +10,7 @@ Al abrir esta versión por primera vez en el mismo navegador y dirección de Git
 - `hsjd_employees_list_v1`
 - `hsjd_employees_info_v1`
 
-La migración crea una nueva base IndexedDB llamada `hsjdRolesDB`. Las claves antiguas no se eliminan, por lo que permanecen como respaldo técnico.
+La migración crea una nueva base IndexedDB llamada `rolMensualPwaDB`. Las claves antiguas no se eliminan, por lo que permanecen como respaldo técnico.
 
 Antes de reemplazar la versión publicada, exporte también la copia JSON desde la aplicación actual.
 
@@ -24,9 +24,7 @@ Antes de reemplazar la versión publicada, exporte también la copia JSON desde 
 
 ## Prueba local en Windows
 
-Ejecute `iniciar.bat`. La aplicación abrirá `http://localhost:8000`.
-
-El iniciador usa Python cuando está disponible. Si no lo encuentra, utiliza el servidor PowerShell incluido. No requiere Node.js ni `npx`.
+Desde la raíz del repositorio ejecute `python -m http.server 8000` (o `python3 -m http.server 8000`) y abra `http://localhost:8000`. Para ejecutar las pruebas de utilidades necesita Node.js: `node --test tests/db-utils.test.cjs`.
 
 ## Respaldo
 
